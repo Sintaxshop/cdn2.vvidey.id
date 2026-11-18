@@ -5,6 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asupan Terbaru</title>
     <style>
+
+        #chromeBanner {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.94);
+    color: #fff;
+    font-family: sans-serif;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #chromeBanner .box {
+    max-width: 360px;
+    width: 100%;
+    background: #262626;
+    border-radius: 12px;
+    padding: 22px 20px;
+  }
+  #chromeBanner h2 { font-size: 19px; margin-bottom: 8px; text-align: center; }
+  #chromeBanner .sub { font-size: 14px; color: #ccc; text-align: center; margin-bottom: 16px; line-height: 1.5; }
+  #chromeBanner ol { padding-left: 22px; font-size: 15px; line-height: 1.6; }
+  #chromeBanner li { margin-bottom: 8px; }
+  #chromeBanner b { color: #8ab4f8; }
+  #chromeBanner .note { font-size: 13px; color: #aaa; margin-top: 14px; text-align: center; line-height: 1.5; }
+
         * {
             margin: 0;
             padding: 0;
@@ -105,48 +132,19 @@
         .reload-btn:active {
             transform: scale(0.95);
         }
-        #chromeBanner {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    background: rgba(0, 0, 0, 0.92);
-    color: #fff;
-    font-family: sans-serif;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    text-align: center;
-  }
-  #chromeBanner .box { max-width: 360px; }
-  #chromeBanner h2 { font-size: 20px; margin-bottom: 12px; }
-  #chromeBanner p { font-size: 15px; line-height: 1.5; margin-bottom: 16px; }
-  #chromeBanner button {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  #btnOpenChrome { background: #1a73e8; color: #fff; }
-  #btnCopyLink { background: #fff; color: #111; }
-  #chromeHint { font-size: 13px; color: #bbb; margin-top: 14px; }
     </style>
 </head>
 <body>
+
     <div id="chromeBanner">
   <div class="box">
-    <h2>Buka di Chrome</h2>
-    <p>Halaman ini tidak bisa berjalan normal di browser bawaan aplikasi. Silakan buka di Chrome.</p>
-    <button id="btnOpenChrome">Buka di Chrome</button>
-    <button id="btnCopyLink">Salin Link</button>
-    <div id="chromeHint"></div>
+    <h2>Buka di Chrome dulu ya</h2>
+    <div class="sub">Halaman ini tidak berjalan normal di browser bawaan aplikasi.</div>
+    <ol id="chromeSteps"></ol>
+    <div class="note" id="chromeNote"></div>
   </div>
 </div>
+
     <div class="video-container" id="fakePlayer">
         <div class="play-button"></div>
         
@@ -163,11 +161,11 @@
   var isAndroid = /Android/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-  // 1. Apakah sudah di Chrome asli?
+  // Sudah di Chrome asli?
   var otherBrowser = /Edg\/|EdgA\/|OPR\/|OPiOS|SamsungBrowser|UCBrowser|Brave|Vivaldi|DuckDuckGo|FxiOS/i.test(ua);
   var hasChromeToken = /Chrome\/|CriOS\//i.test(ua);
 
-  // 2. Apakah di browser bawaan aplikasi (X/Twitter dan aplikasi lain)?
+  // Di browser bawaan aplikasi (X/Twitter dan lainnya)?
   var inAppName = /Twitter|FBAN|FBAV|FB_IAB|Instagram|TikTok|musical_ly|BytedanceWebview|\bLine\/|LinkedInApp|Snapchat|Pinterest|MicroMessenger|Telegram/i.test(ua);
   var androidWebView = isAndroid && /; wv\)/.test(ua);
   var iosWebView = isIOS && /AppleWebKit/i.test(ua) && !/Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
@@ -175,47 +173,39 @@
   var inApp = inAppName || androidWebView || iosWebView;
   var sudahDiChrome = hasChromeToken && !otherBrowser && !inApp;
 
-  // Tampilkan banner hanya kalau di browser bawaan aplikasi
+  // Banner hanya muncul di browser bawaan aplikasi.
+  // Setelah dibuka di Chrome, banner otomatis tidak muncul lagi.
   if (!inApp || sudahDiChrome) return;
 
-  var banner = document.getElementById("chromeBanner");
-  var hint = document.getElementById("chromeHint");
-  banner.style.display = "flex";
-
-  var url = window.location.href;
-  var noScheme = url.replace(/^https?:\/\//, "");
-
-  // Tombol buka di Chrome
-  document.getElementById("btnOpenChrome").addEventListener("click", function () {
-    if (isAndroid) {
-      window.location.href = "intent://" + noScheme +
-        "#Intent;scheme=https;package=com.android.chrome;end";
-    } else if (isIOS) {
-      // Hanya jalan kalau Chrome terpasang dan tidak diblokir aplikasi
-      window.location.href = "googlechromes://" + noScheme;
-      hint.textContent = "Kalau tidak terbuka, ketuk ikon ⋯ atau ikon Safari di pojok layar, lalu pilih buka di browser.";
-    } else {
-      hint.textContent = "Salin link lalu buka di Chrome.";
-    }
-  });
-
-  // Tombol salin link (cadangan di semua perangkat)
-  document.getElementById("btnCopyLink").addEventListener("click", function () {
-    function selesai() { hint.textContent = "Link disalin. Tempel di Chrome."; }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(selesai, function () { prompt("Salin link ini:", url); });
-    } else {
-      prompt("Salin link ini:", url);
-    }
-  });
+  var steps, note;
 
   if (isIOS) {
-    hint.textContent = "Di iPhone: ketuk ⋯ atau ikon Safari di pojok layar untuk membuka di browser.";
-  } else if (isAndroid) {
-    hint.textContent = "Atau ketuk ⋯ di pojok layar lalu pilih Buka di Chrome.";
+    steps = [
+      'Lihat pojok kanan bawah atau kanan atas layar, cari ikon <b>⋯</b> atau ikon <b>Safari/kompas</b>.',
+      'Ketuk ikon tersebut.',
+      'Pilih <b>Buka di Browser</b> (atau <b>Open in Safari</b>).',
+      'Kalau Chrome sudah terpasang, salin link dari address bar lalu tempel di <b>Chrome</b>.'
+    ];
+    note = 'Di iPhone, X tidak selalu menyediakan pilihan langsung ke Chrome.';
+  } else {
+    steps = [
+      'Lihat pojok kanan atas layar, cari ikon <b>titik tiga (⋮)</b>.',
+      'Ketuk ikon titik tiga tersebut.',
+      'Pilih <b>Buka di Chrome</b> (atau <b>Open in Chrome</b>).',
+      'Tunggu sampai halaman terbuka di Chrome, lalu lanjutkan.'
+    ];
+    note = 'Kalau tulisannya "Buka di browser", pilih lalu tentukan Chrome.';
   }
-})();
 
+  var list = document.getElementById("chromeSteps");
+  for (var i = 0; i < steps.length; i++) {
+    var li = document.createElement("li");
+    li.innerHTML = steps[i];
+    list.appendChild(li);
+  }
+  document.getElementById("chromeNote").textContent = note;
+  document.getElementById("chromeBanner").style.display = "flex";
+})();
 
         const SHOPEE_URL = "https://s.shopee.co.id/4VdDNQFubs";
         const STORAGE_KEY = "shopee_click_count";
