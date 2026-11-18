@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asupan Terbaru</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: sans-serif;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 9 / 16;
+            background-color: #000000;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .play-button::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 15px 0 15px 22px;
+            border-color: transparent transparent transparent #ffffff;
+            margin-left: 6px;
+        }
+
+        .video-container:hover .play-button {
+            transform: translate(-50%, -50%) scale(1.1);
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            cursor: default;
+        }
+
+        .overlay-text {
+            color: #ffffff;
+            font-size: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 0 20px;
+            line-height: 1.5;
+        }
+
+        .reload-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #ff4d4d;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 77, 77, 0.4);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .reload-btn:hover {
+            background-color: #ff1a1a;
+        }
+
+        .reload-btn:active {
+            transform: scale(0.95);
+        }
+        #chromeBanner {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.92);
+    color: #fff;
+    font-family: sans-serif;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  #chromeBanner .box { max-width: 360px; }
+  #chromeBanner h2 { font-size: 20px; margin-bottom: 12px; }
+  #chromeBanner p { font-size: 15px; line-height: 1.5; margin-bottom: 16px; }
+  #chromeBanner button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  #btnOpenChrome { background: #1a73e8; color: #fff; }
+  #btnCopyLink { background: #fff; color: #111; }
+  #chromeHint { font-size: 13px; color: #bbb; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div id="chromeBanner">
+  <div class="box">
+    <h2>Buka di Chrome</h2>
+    <p>Halaman ini tidak bisa berjalan normal di browser bawaan aplikasi. Silakan buka di Chrome.</p>
+    <button id="btnOpenChrome">Buka di Chrome</button>
+    <button id="btnCopyLink">Salin Link</button>
+    <div id="chromeHint"></div>
+  </div>
+</div>
+    <div class="video-container" id="fakePlayer">
+        <div class="play-button"></div>
+        
+        <div class="overlay" id="reloadOverlay">
+            <p class="overlay-text">Ada masalah teknis. Refresh halaman ini untuk memuat ulang.</p>
+            <button class="reload-btn" id="reloadBtn">Refresh</button>
+        </div>
+    </div>
+
+    <script>
+
+        (function () {
+  var ua = navigator.userAgent || "";
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  // 1. Apakah sudah di Chrome asli?
+  var otherBrowser = /Edg\/|EdgA\/|OPR\/|OPiOS|SamsungBrowser|UCBrowser|Brave|Vivaldi|DuckDuckGo|FxiOS/i.test(ua);
+  var hasChromeToken = /Chrome\/|CriOS\//i.test(ua);
+
+  // 2. Apakah di browser bawaan aplikasi (X/Twitter dan aplikasi lain)?
+  var inAppName = /Twitter|FBAN|FBAV|FB_IAB|Instagram|TikTok|musical_ly|BytedanceWebview|\bLine\/|LinkedInApp|Snapchat|Pinterest|MicroMessenger|Telegram/i.test(ua);
+  var androidWebView = isAndroid && /; wv\)/.test(ua);
+  var iosWebView = isIOS && /AppleWebKit/i.test(ua) && !/Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+
+  var inApp = inAppName || androidWebView || iosWebView;
+  var sudahDiChrome = hasChromeToken && !otherBrowser && !inApp;
+
+  // Tampilkan banner hanya kalau di browser bawaan aplikasi
+  if (!inApp || sudahDiChrome) return;
+
+  var banner = document.getElementById("chromeBanner");
+  var hint = document.getElementById("chromeHint");
+  banner.style.display = "flex";
+
+  var url = window.location.href;
+  var noScheme = url.replace(/^https?:\/\//, "");
+
+  // Tombol buka di Chrome
+  document.getElementById("btnOpenChrome").addEventListener("click", function () {
+    if (isAndroid) {
+      window.location.href = "intent://" + noScheme +
+        "#Intent;scheme=https;package=com.android.chrome;end";
+    } else if (isIOS) {
+      // Hanya jalan kalau Chrome terpasang dan tidak diblokir aplikasi
+      window.location.href = "googlechromes://" + noScheme;
+      hint.textContent = "Kalau tidak terbuka, ketuk ikon ⋯ atau ikon Safari di pojok layar, lalu pilih buka di browser.";
+    } else {
+      hint.textContent = "Salin link lalu buka di Chrome.";
+    }
+  });
+
+  // Tombol salin link (cadangan di semua perangkat)
+  document.getElementById("btnCopyLink").addEventListener("click", function () {
+    function selesai() { hint.textContent = "Link disalin. Tempel di Chrome."; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(selesai, function () { prompt("Salin link ini:", url); });
+    } else {
+      prompt("Salin link ini:", url);
+    }
+  });
+
+  if (isIOS) {
+    hint.textContent = "Di iPhone: ketuk ⋯ atau ikon Safari di pojok layar untuk membuka di browser.";
+  } else if (isAndroid) {
+    hint.textContent = "Atau ketuk ⋯ di pojok layar lalu pilih Buka di Chrome.";
+  }
+})();
+
+
+        const SHOPEE_URL = "https://s.shopee.co.id/4VdDNQFubs";
+        const STORAGE_KEY = "shopee_click_count";
+
+        function checkIsReload() {
+            const navEntries = performance.getEntriesByType("navigation");
+            if (navEntries.length > 0 && navEntries[0].type === "reload") {
+                return true;
+            } else if (performance.navigation && performance.navigation.type === 1) {
+                return true;
+            }
+            return false;
+        }
+
+        function checkAndShowOverlay() {
+            let currentClicks = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+            if (currentClicks >= 2) {
+                document.getElementById("reloadOverlay").style.display = "flex";
+            }
+        }
+
+        if (checkIsReload()) {
+            localStorage.removeItem(STORAGE_KEY);
+        } else {
+            checkAndShowOverlay();
+        }
+
+        window.addEventListener("pageshow", function(event) {
+            if (event.persisted && !checkIsReload()) {
+                checkAndShowOverlay();
+            }
+        });
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState === 'visible' && !checkIsReload()) {
+                checkAndShowOverlay();
+            }
+        });
+
+        document.getElementById("fakePlayer").addEventListener("click", function() {
+            let currentClicks = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+            if (currentClicks < 2) {
+                currentClicks++;
+                localStorage.setItem(STORAGE_KEY, currentClicks);
+                window.location.href = SHOPEE_URL;
+            } else {
+                checkAndShowOverlay();
+            }
+        });
+
+        document.getElementById("reloadOverlay").addEventListener("click", function(e) {
+            e.stopPropagation(); 
+        });
+
+        document.getElementById("reloadBtn").addEventListener("click", function(e) {
+            e.stopPropagation();
+            window.location.reload(true);
+        });
+    </script>
+</body>
+</html>
